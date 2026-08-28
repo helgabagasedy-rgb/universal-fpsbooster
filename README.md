@@ -1,78 +1,241 @@
--- =====================================================
--- SUPER OPTIMIZER + ANTI AFK + VISUAL TWEAK
--- Fitur: FPS Boost, Box Player, Hide GUI, Anti AFK
--- =====================================================
+--==================================================
+-- SLEEPYYY FPS BOOSTER
+-- FPS + PING + SIGNAL HUD
+-- LocalScript
+--==================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Stats = game:GetService("Stats")
 
--- ===== VARIABLES ANTI AFK =====
-local antiAFKActive = false
-local antiAFKCoroutine = nil
-local lastMoveTime = tick()
+local player = Players.LocalPlayer
 
--- ===== GUI CONTROL =====
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = PlayerGui
-ScreenGui.ResetOnSpawn = false
+--==================================================
+-- SETTINGS
+--==================================================
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-MainFrame.BackgroundTransparency = 0.1
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+local BOOST_ENABLED = true
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = MainFrame
+--==================================================
+-- FPS BOOST
+--==================================================
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundTransparency = 1
-Title.Text = "⚡ OPTIMIZER HAZ ⚡"
-Title.TextColor3 = Color3.fromRGB(0, 255, 200)
-Title.TextScaled = true
-Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
+local function boostGraphics()
 
--- ===== FITUR 1: BLACKSCREEN FPS BOOST =====
-local BlackScreenBtn = Instance.new("TextButton")
-BlackScreenBtn.Size = UDim2.new(0, 260, 0, 35)
-BlackScreenBtn.Position = UDim2.new(0.5, -130, 0.18, 0)
-BlackScreenBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-BlackScreenBtn.Text = "🔲 BLACKSCREEN: OFF"
-BlackScreenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-BlackScreenBtn.TextScaled = true
-BlackScreenBtn.Font = Enum.Font.Gotham
-local BSCorner = Instance.new("UICorner")
-BSCorner.CornerRadius = UDim.new(0, 6)
-BSCorner.Parent = BlackScreenBtn
-BlackScreenBtn.Parent = MainFrame
+	-- Kurangi efek Lighting
+	Lighting.GlobalShadows = false
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
 
--- Blackscreen background
-local BlackScreen = Instance.new("Frame")
-BlackScreen.Size = UDim2.new(1, 0, 1, 0)
-BlackScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-BlackScreen.BackgroundTransparency = 1
-BlackScreen.BorderSizePixel = 0
-BlackScreen.ZIndex = 9999
-BlackScreen.Parent = PlayerGui
+	-- Hapus efek visual berat
+	for _, obj in ipairs(Lighting:GetChildren()) do
+		if obj:IsA("BlurEffect")
+		or obj:IsA("DepthOfFieldEffect")
+		or obj:IsA("SunRaysEffect")
+		or obj:IsA("BloomEffect")
+		or obj:IsA("ColorCorrectionEffect") then
 
-local blackscreenActive = false
+			obj.Enabled = false
+		end
+	end
 
--- ===== FITUR 2: PLAYER KOTAK =====
-local BoxBtn = Instance.new("TextButton")
-BoxBtn.Size = UDim2.new(0, 260, 0, 35)
-BoxBtn.Position = UDim2.new(0.5, -130, 0.35, 0)
+	-- Optimasi object
+	for _, obj in ipairs(workspace:GetDescendants()) do
+
+		if obj:IsA("ParticleEmitter")
+		or obj:IsA("Trail")
+		or obj:IsA("Beam") then
+
+			obj.Enabled = false
+
+		elseif obj:IsA("Smoke")
+		or obj:IsA("Fire")
+		or obj:IsA("Sparkles") then
+
+			obj.Enabled = false
+
+		elseif obj:IsA("BasePart") then
+
+			-- Kurangi beban rendering
+			obj.CastShadow = false
+		end
+	end
+end
+
+boostGraphics()
+
+--==================================================
+-- GUI
+--==================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "SleepyyyFPS"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,185,0,105)
+frame.Position = UDim2.new(1,-200,0,15)
+frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+frame.BackgroundTransparency = 0.12
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,12)
+corner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1
+stroke.Transparency = 0.35
+stroke.Color = Color3.fromRGB(100,100,120)
+stroke.Parent = frame
+
+--==================================================
+-- TEXT
+--==================================================
+
+local fpsText = Instance.new("TextLabel")
+fpsText.Size = UDim2.new(1,-20,0,25)
+fpsText.Position = UDim2.new(0,10,0,8)
+fpsText.BackgroundTransparency = 1
+fpsText.Text = "FPS : 0"
+fpsText.TextColor3 = Color3.fromRGB(255,255,255)
+fpsText.TextSize = 14
+fpsText.Font = Enum.Font.GothamBold
+fpsText.TextXAlignment = Enum.TextXAlignment.Left
+fpsText.Parent = frame
+
+local pingText = Instance.new("TextLabel")
+pingText.Size = UDim2.new(1,-20,0,25)
+pingText.Position = UDim2.new(0,10,0,33)
+pingText.BackgroundTransparency = 1
+pingText.Text = "PING : 0 ms"
+pingText.TextColor3 = Color3.fromRGB(255,255,255)
+pingText.TextSize = 14
+pingText.Font = Enum.Font.GothamBold
+pingText.TextXAlignment = Enum.TextXAlignment.Left
+pingText.Parent = frame
+
+local signalText = Instance.new("TextLabel")
+signalText.Size = UDim2.new(1,-20,0,25)
+signalText.Position = UDim2.new(0,10,0,58)
+signalText.BackgroundTransparency = 1
+signalText.Text = "SIGNAL : ●"
+signalText.TextColor3 = Color3.fromRGB(100,255,160)
+signalText.TextSize = 13
+signalText.Font = Enum.Font.GothamBold
+signalText.TextXAlignment = Enum.TextXAlignment.Left
+signalText.Parent = frame
+
+local byText = Instance.new("TextLabel")
+byText.Size = UDim2.new(1,-20,0,18)
+byText.Position = UDim2.new(0,10,1,-21)
+byText.BackgroundTransparency = 1
+byText.Text = "by sleeppyyy"
+byText.TextColor3 = Color3.fromRGB(130,130,145)
+byText.TextSize = 10
+byText.Font = Enum.Font.Gotham
+byText.TextXAlignment = Enum.TextXAlignment.Right
+byText.Parent = frame
+
+--==================================================
+-- FPS COUNTER
+--==================================================
+
+local frames = 0
+local lastTime = os.clock()
+local fps = 0
+
+RunService.RenderStepped:Connect(function()
+
+	frames += 1
+
+	local now = os.clock()
+
+	if now - lastTime >= 1 then
+
+		fps = frames
+		frames = 0
+		lastTime = now
+
+		fpsText.Text = "FPS : "..fps
+
+		-- Warna FPS
+		if fps >= 50 then
+			fpsText.TextColor3 =
+				Color3.fromRGB(100,255,160)
+
+		elseif fps >= 30 then
+			fpsText.TextColor3 =
+				Color3.fromRGB(255,220,100)
+
+		else
+			fpsText.TextColor3 =
+				Color3.fromRGB(255,100,100)
+		end
+	end
+end)
+
+--==================================================
+-- PING
+--==================================================
+
+task.spawn(function()
+
+	while true do
+
+		task.wait(1)
+
+		local ping = 0
+
+		pcall(function()
+			ping = math.floor(
+				player:GetNetworkPing() * 1000
+			)
+		end)
+
+		pingText.Text =
+			"PING : "..ping.." ms"
+
+		-- Signal indicator
+		if ping <= 60 then
+
+			signalText.Text =
+				"SIGNAL : ●●●●"
+
+			signalText.TextColor3 =
+				Color3.fromRGB(100,255,160)
+
+		elseif ping <= 120 then
+
+			signalText.Text =
+				"SIGNAL : ●●●○"
+
+			signalText.TextColor3 =
+				Color3.fromRGB(180,255,100)
+
+		elseif ping <= 200 then
+
+			signalText.Text =
+				"SIGNAL : ●●○○"
+
+			signalText.TextColor3 =
+				Color3.fromRGB(255,220,100)
+
+		else
+
+			signalText.Text =
+				"SIGNAL : ●○○○"
+
+			signalText.TextColor3 =
+				Color3.fromRGB(255,100,100)
+
+		end
+	end
+end)BoxBtn.Position = UDim2.new(0.5, -130, 0.35, 0)
 BoxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 BoxBtn.Text = "📦 BOX PLAYER: OFF"
 BoxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
